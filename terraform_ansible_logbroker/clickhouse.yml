@@ -1,0 +1,19 @@
+---
+- hosts: clickhouse
+  tasks:
+    - name: run clickhouse server
+      shell: "docker run -d --rm --name clickhouse --ulimit nofile=262144:262144 -p 8123:8123 yandex/clickhouse-server"
+      become: yes
+      become_method: sudo
+    - name: wait
+      shell: "sleep 60"
+      become: yes
+      become_method: sudo    
+    - name: create table
+      shell: "docker exec -it clickhouse clickhouse-client -q 'create table IF NOT EXISTS default.log (a Int32, b String) ENGINE = MergeTree() primary key a;'"
+      become: yes
+      become_method: sudo
+    - name: create buffer
+      shell: "docker exec -it clickhouse clickhouse-client -q 'CREATE TABLE IF NOT EXISTS default.log_buffer AS default.log ENGINE = Buffer(default, log, 16, 10, 100, 10000, 1000000, 10000000, 100000000)'"
+      become: yes
+      become_method: sudo

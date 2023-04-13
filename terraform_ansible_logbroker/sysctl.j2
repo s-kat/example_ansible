@@ -1,0 +1,13 @@
+[Unit]
+Description=Logbroker instance
+After=network.target
+
+[Service]
+User={{ ansible_user }}
+Group=www-data
+WorkingDirectory=/home/{{ ansible_user }}/logbroker
+Environment="LOGBROKER_CH_HOST={{ groups['clickhouse'].0 }}"
+Environment="PATH=/home/{{ ansible_user }}/logbroker/venv/bin"
+ExecStart=/home/{{ ansible_user }}/logbroker/venv/bin/python -m uvicorn server:app --host 0.0.0.0 --port 8080
+[Install]
+WantedBy=multi-user.target

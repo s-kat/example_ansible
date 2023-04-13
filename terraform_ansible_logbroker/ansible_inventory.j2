@@ -1,0 +1,25 @@
+[nat]
+{{ external_ip_nat.value }}
+
+[nat:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[reverse_proxy]
+{{ external_ip_reverse_proxy.value }}
+
+[reverse_proxy:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'
+
+[logbroker]
+{%- for line in internal_ip_logbroker.value %}
+{{ line -}}
+{% endfor %}
+
+[clickhouse]
+{{ internal_ip_clickhouse.value }}
+
+[logbroker:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q user@{{ external_ip_nat.value }}"'
+
+[clickhouse:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new -o ProxyCommand="ssh -o StrictHostKeyChecking=accept-new -W %h:%p -q user@{{ external_ip_nat.value }}"'

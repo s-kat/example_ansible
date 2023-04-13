@@ -1,0 +1,5 @@
+[server]
+62.84.113.113
+
+[server:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'

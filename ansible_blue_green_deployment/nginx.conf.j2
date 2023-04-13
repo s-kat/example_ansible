@@ -1,0 +1,11 @@
+upstream worker {
+    server {{ docker_address.stdout }};
+}
+
+server {
+    listen 80;
+
+    location / {
+        proxy_pass http://worker;
+    }
+}

@@ -1,0 +1,49 @@
+---
+- hosts: logbroker
+  tasks:
+    - name: Debug hello remote
+      debug:
+        msg: "{{ groups['clickhouse'].0 }}"
+    - name: Update apt cache and install deps
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+      with_items:
+        - python3-pip
+        - python3-dev
+      become: yes
+      become_method: sudo
+    - name: Install venv
+      pip:
+        name: virtualenv
+      become: yes
+      become_method: sudo
+    - name: Copy files
+      copy:
+        src: "{{ item }}"
+        dest: /home/{{ ansible_user }}/logbroker/
+      with_items:
+        - logbroker/app/server.py
+        - logbroker/requirements.txt
+    - name: Creates venv directory
+      file:
+        path: /home/{{ ansible_user }}/logbroker/venv/
+        state: directory
+    - name: Install modules in a virtualenv
+      pip:
+        requirements: /home/{{ ansible_user }}/logbroker/requirements.txt
+        virtualenv: /home/{{ ansible_user }}/logbroker/venv/
+    - name: set envvar
+      shell: "export LOGBROKER_CH_HOST={{ groups['clickhouse'].0 }}"
+      become: yes
+      become_method: sudo
+    - name: Template systemd service config
+      template:
+        src: sysctl.j2
+        dest: /etc/systemd/system/logbroker.service
+      become: yes
+    - name: Start systemd app service
+      systemd: name=logbroker.service state=restarted enabled=yes daemon_reload=true
+      become: yes
+      become_method: sudo

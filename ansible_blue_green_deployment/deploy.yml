@@ -1,0 +1,43 @@
+---
+- hosts: server
+  tasks:
+    - name: Debug user ID
+      debug:
+        msg: "Ansible connected with {{ ansible_user }}"
+    - name: docker login
+      shell: "docker login --username json_key --password-stdin cr.yandex < ./key.json"
+      become: yes
+      become_method: sudo
+    - name: pull new image
+      shell: "docker pull cr.yandex/crpo2ktp2imqj3r9c2d3/cloud-hw-3:{{ git_tag }}"
+      become: yes
+      become_method: sudo
+    - name: run new image
+      shell: | 
+        export NEW_CONTAINER=$( docker run -d -p :8000 cr.yandex/crpo2ktp2imqj3r9c2d3/cloud-hw-3:{{ git_tag }})
+        export DOCKER_ADDRES=$(docker port $NEW_CONTAINER 8000 | head -n 1)
+        echo $DOCKER_ADDRES
+      register: docker_address
+      become: yes
+      become_method: sudo
+    - name: Apply Nginx template
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+      become: yes
+      become_method: sudo
+    - name: Enable new site
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
+      become: yes
+      become_method: sudo
+    - name: Reload
+      shell: "nginx -s reload"
+      become: yes
+      become_method: sudo
+    - name: clean containers
+      shell: "docker ps | grep -v {{ docker_address.stdout }} | awk '{ print $1 }' | while read line ; do docker stop $line ; done"
+      become: yes
+      become_method: sudo
